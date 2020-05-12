@@ -1,4 +1,4 @@
-/*	Author: kennethalvarez
+/*	Author: ken:nethalvarez
  *  Partner(s) Name: 
  *	Lab Section:
  *	Assignment: Lab #  Exercise #
@@ -17,6 +17,7 @@
 enum States {Start, Init, ButtonPressed1, OnRelease1, ButtonPressed2, OnRelease2, Reset} state;
 unsigned char tmpA;
 unsigned char tmpC;
+unsigned char cnt;
 
 void Tick() {
 	switch(state) { //transitions
@@ -40,32 +41,50 @@ void Tick() {
 			break;
 		case ButtonPressed1:
 			state = OnRelease1;
+			cnt = 0;
 
 			if((tmpA & 0x03) == 0x03) { //RESET STATEMENT MIGHT BE WRONG
                                 state = Reset;
                         }
 			break;
 		case OnRelease1:
-			if((tmpA & 0x01) == 0x01) {
+			if(((tmpA & 0x01) == 0x01) && (cnt == 10)) {
+				if(tmpC < 9) {
+                                	tmpC = tmpC + 1;
+				}
 				state = OnRelease1;
+				cnt = 0;
+			}
+			else if((tmpA & 0x01) != 0x01) {
+				state = Init;
 			}
 			else {
-				state = Init;
+				state = OnRelease1;
+				cnt += 1;
 			}
 			break;
 		case ButtonPressed2:
 			state = OnRelease2;
+			cnt = 0;
 
 			if((tmpA & 0x03) == 0x03) { //RESET STATEMENT MIGHT BE WRONG
        				state = Reset;
                         }
 			break;
 		case OnRelease2:
-			if((tmpA & 0x02) == 0x02) { //If button is held down then stay in release
+			if(((tmpA & 0x02) == 0x02) && (cnt == 10)) { //If button is held down then stay in release
+				if(tmpC > 0) {
+ 	                	        tmpC = tmpC - 0x01;               
+				}
 				state = OnRelease2;
+				cnt = 0;
+			}
+			else if((tmpA & 0x02) != 0x02){
+				state = Init;
 			}
 			else {
-				state = Init;
+				state = OnRelease2;
+				cnt += 1; 
 			}
 			break;
 		case Reset:
@@ -81,7 +100,6 @@ void Tick() {
 			break;
 		case ButtonPressed1:
 			if(tmpC < 9) {
-				//PORTC = PINC +  0x01;
 				tmpC = tmpC + 0x01;
 			}
 			break;
@@ -89,14 +107,12 @@ void Tick() {
 			break;
 		case ButtonPressed2:
 			if(tmpC > 0) {
-				//PORTC = PINC - 0x01;
 				tmpC = tmpC - 0x01;
 			}
 			break;
 		case OnRelease2:
 			break;
 		case Reset:
-			//PORTC = 0x00;
 			tmpC = 0x00;
 			break;
 		default:
