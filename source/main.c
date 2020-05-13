@@ -68,7 +68,9 @@ void Tick() {
 				score = score + 1;
 			}
 			else {
-				score = score - 1;
+				if(score > 0) {
+					score = score - 1;
+				}
 			}
 			break;
 		case ButtonReleased:
