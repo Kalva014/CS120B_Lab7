@@ -1,7 +1,7 @@
-/*	Author: ken:nethalvarez
+/*	Author: kennethalvarez
  *  Partner(s) Name: 
  *	Lab Section:
- *	Assignment: Lab #  Exercise #
+ *	Assignment: Lab #7  Exercise #2
  *	Exercise Description: [optional - include for your own benefit]
  *
  *	I acknowledge all content contained herein, excluding template or example
@@ -14,10 +14,11 @@
 #include "io.h"
 #include "timer.h"
 
-enum States {Start, Init, ButtonPressed1, OnRelease1, ButtonPressed2, OnRelease2, Reset} state;
+enum States {Start, Init, Led2, Led3, ButtonPressed, ButtonReleased, ButtonPressed2} state;
 unsigned char tmpA;
-unsigned char tmpC;
-unsigned char cnt;
+unsigned char tmpB;
+unsigned char prevState;
+unsigned char score;
 
 void Tick() {
 	switch(state) { //transitions
@@ -25,125 +26,123 @@ void Tick() {
 			state = Init;
 			break;
 		case Init:
+			prevState = Init;
+			state = Led2;
+			
 			if((tmpA & 0x01) == 0x01) {
-				state = ButtonPressed1;
+				prevState = Init;
+				state = ButtonPressed;
 			}
-			else if((tmpA & 0x02) == 0x02) {
+			break;
+		case Led2:
+			if(prevState == Init) {
+				state = Led3;
+			}
+			else {
+				state = Init;	
+			}
+
+			if((tmpA & 0x01) == 0x01) {
+				prevState = Led2;
+				state = ButtonPressed;
+			}
+			break;
+		case Led3:
+			prevState = Led3;
+			state = Led2;
+			
+			if((tmpA & 0x01) == 0x01) {
+				prevState = Led3;
+				state = ButtonPressed;
+			}
+			break;
+		case ButtonPressed:
+			if((tmpA & 0x01) == 0x01) {
+				state = ButtonPressed;
+			}
+			else {
+				state = ButtonReleased;
+			}
+			
+			if(prevState == Led2) { //new part
+				score = score + 1;
+			}
+			else {
+				score = score - 1;
+			}
+			break;
+		case ButtonReleased:
+			if((tmpA & 0x01) == 0x01) {
 				state = ButtonPressed2;
 			}
 			else {
-				state = Init;
-			}
-				
-			if((tmpA & 0x03) == 0x03) { //RESET STATEMENT MIGHT BE WRONG
-				state = Reset;
-			}
-			break;
-		case ButtonPressed1:
-			state = OnRelease1;
-			cnt = 0;
-
-			if((tmpA & 0x03) == 0x03) { //RESET STATEMENT MIGHT BE WRONG
-                                state = Reset;
-                        }
-			break;
-		case OnRelease1:
-			if(((tmpA & 0x01) == 0x01) && (cnt == 10)) {
-				if(tmpC < 9) {
-                                	tmpC = tmpC + 1;
-				}
-				state = OnRelease1;
-				cnt = 0;
-			}
-			else if((tmpA & 0x01) != 0x01) {
-				state = Init;
-			}
-			else {
-				state = OnRelease1;
-				cnt += 1;
+				state = ButtonReleased;
 			}
 			break;
 		case ButtonPressed2:
-			state = OnRelease2;
-			cnt = 0;
-
-			if((tmpA & 0x03) == 0x03) { //RESET STATEMENT MIGHT BE WRONG
-       				state = Reset;
-                        }
-			break;
-		case OnRelease2:
-			if(((tmpA & 0x02) == 0x02) && (cnt == 10)) { //If button is held down then stay in release
-				if(tmpC > 0) {
- 	                	        tmpC = tmpC - 0x01;               
-				}
-				state = OnRelease2;
-				cnt = 0;
-			}
-			else if((tmpA & 0x02) != 0x02){
-				state = Init;
-			}
-			else {
-				state = OnRelease2;
-				cnt += 1; 
-			}
-			break;
-		case Reset:
 			state = Init;
 			break;
 		default:
-			break; 
+			break;
 	}
+	
 	switch(state) { //actions
 		case Start:
 			break;
 		case Init:
+			tmpB = 0x01;
 			break;
-		case ButtonPressed1:
-			if(tmpC < 9) {
-				tmpC = tmpC + 0x01;
-			}
+		case Led2:
+			tmpB = 0x02;
 			break;
-		case OnRelease1:
+		case Led3:
+			tmpB = 0x04;
 			break;
-		case ButtonPressed2:
-			if(tmpC > 0) {
-				tmpC = tmpC - 0x01;
-			}
+		ButtonPressed: 		
 			break;
-		case OnRelease2:
+		ButtonReleased:
 			break;
-		case Reset:
-			tmpC = 0x00;
-			break;
+		ButtonPressed2:
+			break;	
 		default:
-			break;
+			break;		
 	}
 }
 
-
 int main(void) {
     /* Insert DDR and PORT initializations */
-        DDRA = 0x00; PORTA = 0xFF;
-        DDRC = 0xFF; PORTC = 0x00;
+	DDRA = 0x00; PORTA = 0xFF;
+	DDRB = 0x0F; PORTB = 0x00;
+	DDRC = 0xFF; PORTC = 0x00;
 	DDRD = 0xFF; PORTD = 0x00;
-	
-	TimerSet(100);
-	TimerOn();
 
-	state = Start; //Inital state			
-	tmpC = 0;
-	LCD_init();
+	state = Start;
+	prevState = Init;
+	score = 5;	
+
+	TimerSet(300);
+	TimerOn();
+	
+        LCD_init();	
 
     /* Insert your solution below */
     while (1) {
 	tmpA = ~PINA;
+	tmpB = PINB;
 	Tick();
-	//LCD_ClearScreen();
-	LCD_Cursor(1);
-	LCD_WriteData(tmpC + '0');
+	PORTB = tmpB;
+	
+	LCD_Cursor(1);	
+	if(score < 0){}
+	else if(score == 9) {
+		LCD_DisplayString(1, "Winner!");
+	}
+	else {
+		LCD_WriteData(score + '0');	
+	}
 	
 	while(!TimerFlag);
 	TimerFlag = 0;
     }
-       return 1;
+    return 1;
 }
