@@ -133,7 +133,9 @@ int main(void) {
 	PORTB = tmpB;
 	
 	LCD_Cursor(1);	
-	if(score < 0){}
+	if(score < 0){
+		LCD_WriteData('0');
+	}
 	else if(score == 9) {
 		LCD_DisplayString(1, "Winner!");
 	}
